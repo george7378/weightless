@@ -3,4 +3,4 @@ Weightless is a simple rigid body physics simulation showing how cuboid objects 
 
 The only control is the **R** key, which resets and randomises the simulation.
 
-![Floating](https://github.com/george7378/magrathea/blob/master/_img/1.png)
+![Floating](https://github.com/george7378/weightless/blob/master/_img/1.png)
