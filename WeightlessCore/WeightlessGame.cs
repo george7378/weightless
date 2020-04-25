@@ -14,7 +14,7 @@ namespace WeightlessCore
 	{
 		#region Constants
 
-		private const float CollisionBias = 0.05f;
+		private const float CollisionBias = 0.01f;
 
 		#endregion
 
@@ -37,6 +37,8 @@ namespace WeightlessCore
 		private Effect _singleColourEffect;
 
 		private Model _environmentModel;
+
+		private Vector3 _gravity;
 
 		#endregion
 
@@ -87,6 +89,32 @@ namespace WeightlessCore
 
 		private void DrawScene()
 		{
+			// Environment
+			GraphicsDevice.DepthStencilState = DepthStencilState.None;
+
+			foreach (ModelMesh mesh in _environmentModel.Meshes)
+			{
+				foreach (Effect effect in mesh.Effects)
+				{
+					effect.CurrentTechnique = effect.Techniques["SingleColourTechnique"];
+
+					effect.Parameters["World"].SetValue(Matrix.Identity);
+					effect.Parameters["WorldViewProjection"].SetValue(_viewMatrix*_projectionMatrix);
+					effect.Parameters["LightPower"].SetValue(_light.Power);
+					effect.Parameters["AmbientLightPower"].SetValue(_light.AmbientPower);
+					effect.Parameters["LightAttenuation"].SetValue(_light.Attenuation);
+					effect.Parameters["SpecularExponent"].SetValue(_light.SpecularExponent);
+					effect.Parameters["CameraPosition"].SetValue(_cameraPosition);
+					effect.Parameters["LightPosition"].SetValue(_light.Position);
+					effect.Parameters["BaseColour"].SetValue(Color.LightGray.ToVector3());
+					effect.Parameters["SpecularColour"].SetValue(Vector3.Zero);
+				}
+
+				mesh.Draw();
+			}
+
+			GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+
 			// Rigid cuboids
 			foreach (RigidCuboid rigidCuboid in _rigidCuboids)
 			{
@@ -112,28 +140,6 @@ namespace WeightlessCore
 
 					mesh.Draw();
 				}
-			}
-
-			// Environment
-			foreach (ModelMesh mesh in _environmentModel.Meshes)
-			{
-				foreach (Effect effect in mesh.Effects)
-				{
-					effect.CurrentTechnique = effect.Techniques["SingleColourTechnique"];
-
-					effect.Parameters["World"].SetValue(Matrix.Identity);
-					effect.Parameters["WorldViewProjection"].SetValue(_viewMatrix*_projectionMatrix);
-					effect.Parameters["LightPower"].SetValue(_light.Power);
-					effect.Parameters["AmbientLightPower"].SetValue(_light.AmbientPower);
-					effect.Parameters["LightAttenuation"].SetValue(_light.Attenuation);
-					effect.Parameters["SpecularExponent"].SetValue(_light.SpecularExponent);
-					effect.Parameters["CameraPosition"].SetValue(_cameraPosition);
-					effect.Parameters["LightPosition"].SetValue(_light.Position);
-					effect.Parameters["BaseColour"].SetValue(Color.LightGray.ToVector3());
-					effect.Parameters["SpecularColour"].SetValue(Vector3.Zero);
-				}
-
-				mesh.Draw();
 			}
 		}
 
@@ -192,6 +198,8 @@ namespace WeightlessCore
 				};
 			}
 
+			_gravity = 3*new Vector3(newKeyboardState.IsKeyDown(Keys.Right) ? -1 : newKeyboardState.IsKeyDown(Keys.Left) ? 1 : 0, newKeyboardState.IsKeyDown(Keys.Up) ? -1 : newKeyboardState.IsKeyDown(Keys.Down) ? 1 : 0, newKeyboardState.IsKeyDown(Keys.S) ? -1 : newKeyboardState.IsKeyDown(Keys.W) ? 1 : 0);
+
 			_oldKeyboardState = newKeyboardState;
 		}
 
@@ -222,6 +230,7 @@ namespace WeightlessCore
 					}
 				}
 
+				rigidCuboidForce += rigidCuboid.Mass*_gravity;
 				//rigidCuboidTorque -= 0.1f*rigidCuboid.State.AngularMomentum;
 
 				rigidCuboid.ApplyPhysics(rigidCuboidForce, rigidCuboidTorque, timeDelta);
